@@ -114,52 +114,120 @@
         }
     }
 
+    / --- HÀM VẼ TRỤ ĐỊA CHẤT NÂNG CẤP ---
     function veTruDiaChat(h1, h2, name1, name2) {
         const canvas = document.getElementById('soilCanvas');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         
+        // 1. Thiết lập cơ bản
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = "12px Arial";
+        ctx.textAlign = "center";
 
-        const scale = 60; // 1m = 40px
-        const startY = 30;
-        const width = 80;
-        const x = (canvas.width - width) / 2;
+        // Chuyển đổi dữ liệu sang số thực để tính toán an toàn
+        const depth1 = parseFloat(h1);
+        const depth2 = parseFloat(h2);
+        const totalDepth = depth1 + depth2;
+
+        // Các thông số vẽ
+        const topMargin = 40;   // Lề trên cho tiêu đề
+        const leftMargin = 40;  // Lề trái cho thước đo
+        const colWidth = 100;   // Chiều rộng cột trụ
+        // Tự động tính tỷ lệ: Đảm bảo vẽ hết độ sâu trong khoảng 300px chiều cao
+        let scale = 300 / totalDepth; 
+        // Giới hạn tỷ lệ tối thiểu và tối đa để hình không quá bé hoặc quá lớn
+        if (scale < 30) scale = 30;
+        if (scale > 60) scale = 60;
+        
+        const startX = leftMargin;
+        const startY = topMargin;
+
+        // --- PHẦN 1: VẼ TIÊU ĐỀ & MẶT ĐẤT ---
+        ctx.fillStyle = "#333";
+        ctx.font = "bold 14px Arial";
+        ctx.fillText("TRỤ ĐỊA CHẤT", canvas.width / 2, 20);
+        
+        // Vẽ đường mặt đất
+        ctx.beginPath();
+        ctx.moveTo(startX - 10, startY);
+        ctx.lineTo(startX + colWidth + 20, startY);
+        ctx.strokeStyle = "#555";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.font = "11px Arial";
+        ctx.textAlign = "right";
+        ctx.fillText("Mặt đất (0.0m)", startX - 5, startY - 5);
+
+        // --- PHẦN 2: VẼ CÁC LỚP ĐẤT ---
+        ctx.textAlign = "left";
+        ctx.lineWidth = 1;
 
         // Lớp 1
-        const pixelH1 = h1 * scale;
-        ctx.fillStyle = "#e3d5b8"; 
-        ctx.fillRect(x, startY, width, pixelH1);
-        ctx.strokeStyle = "#8d6e63";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, startY, width, pixelH1);
-        
-        // Ghi chú lớp 1
-        ctx.fillStyle = "#333";
-        ctx.font = "13x Arial";
-        ctx.textAlign = "left";
-        ctx.fillText(`${h1}m`, x + width + 10, startY + pixelH1/2);
+        const pixelH1 = depth1 * scale;
+        // Sử dụng gradient nhẹ để tạo khối trông thật hơn
+        let grd1 = ctx.createLinearGradient(startX, startY, startX + colWidth, startY);
+        grd1.addColorStop(0, "#dcb993"); // Màu nâu vàng nhạt (Sét/Á sét)
+        grd1.addColorStop(1, "#cbae85");
+        ctx.fillStyle = grd1;
+        ctx.fillRect(startX, startY, colWidth, pixelH1);
+        ctx.strokeRect(startX, startY, colWidth, pixelH1);
 
         // Lớp 2
-        const pixelH2 = h2 * scale;
-        ctx.fillStyle = "#c2c5aa"; 
-        ctx.fillRect(x, startY + pixelH1, width, pixelH2);
-        ctx.strokeRect(x, startY + pixelH1, width, pixelH2);
-        
-        // Ghi chú lớp 2
-        ctx.fillText(`${h2}m`, x + width + 10, startY + pixelH1 + pixelH2/2);
+        const pixelH2 = depth2 * scale;
+        let grd2 = ctx.createLinearGradient(startX, startY + pixelH1, startX + colWidth, startY + pixelH1);
+        grd2.addColorStop(0, "#e6e6c8"); // Màu xám vàng (Cát/Á cát)
+        grd2.addColorStop(1, "#d4d4b4");
+        ctx.fillStyle = grd2;
+        ctx.fillRect(startX, startY + pixelH1, colWidth, pixelH2);
+        ctx.strokeRect(startX, startY + pixelH1, colWidth, pixelH2);
 
-        // Đường mực nước tĩnh (Minh họa thêm cho chuyên nghiệp)
-        ctx.setLineDash([5, 3]);
+        // --- PHẦN 3: VẼ THƯỚC ĐO ĐỘ SÂU (RULER) ---
+        ctx.strokeStyle = "#888";
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(x - 20, startY);
-        ctx.lineTo(x + width + 20, startY);
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(startX, startY + pixelH1 + pixelH2 + 20); // Trục dọc
         ctx.stroke();
-        ctx.fillText("Mặt đất", x - 60, startY);
 
+        ctx.textAlign = "right";
+        ctx.font = "10px Arial";
+        ctx.fillStyle = "#555";
+
+        // Vòng lặp vẽ vạch chia độ sâu (mỗi 0.5m một vạch nhỏ, 1m một vạch lớn)
+        // Giới hạn vẽ thước đo đến độ sâu tối đa của hố khoan
+        for (let d = 0.5; d <= Math.ceil(totalDepth); d += 0.5) {
+            const yPos = startY + d * scale;
+            // Chỉ vẽ nếu vạch nằm trong phạm vi cột đất
+            if (d <= totalDepth + 0.1) {
+                if (Number.isInteger(d)) {
+                    // Vạch chẵn (1m, 2m...) - Vạch dài + số
+                    ctx.beginPath(); ctx.moveTo(startX - 8, yPos); ctx.lineTo(startX, yPos); ctx.stroke();
+                    ctx.fillText(d.toFixed(1) + "m", startX - 10, yPos + 3);
+                } else {
+                    // Vạch lẻ (0.5m, 1.5m...) - Vạch ngắn
+                    ctx.beginPath(); ctx.moveTo(startX - 5, yPos); ctx.lineTo(startX, yPos); ctx.stroke();
+                }
+            }
+        }
+
+        // --- PHẦN 4: GHI CHÚ ĐỘ SÂU TẠI RANH GIỚI LỚP ---
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#000";
+        ctx.font = "bold 11px Arial";
+
+        // Độ sâu đáy lớp 1
+        ctx.fillText(`▼ ${depth1.toFixed(1)}m`, startX + colWidth + 5, startY + pixelH1 + 4);
+        
+        // Độ sâu đáy lớp 2 (Đáy hố khoan)
+        ctx.fillText(`▼ ${(depth1 + depth2).toFixed(1)}m`, startX + colWidth + 5, startY + pixelH1 + pixelH2 + 4);
+
+        // --- PHẦN 5: CẬP NHẬT CHÚ GIẢI (LEGEND) ---
         document.getElementById('soil-legend').innerHTML = `
-            <span style="color:#e3d5b8">■</span> ${name1} <br>
-            <span style="color:#c2c5aa">■</span> ${name2}
+            <div style="text-align:left; margin-top:10px; border-top:1px dotted #ccc; padding-top:5px;">
+                <div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:#dcb993;border:1px solid #8d6e63;margin-right:5px;"></span><b>Lớp 1:</b> ${name1} (Dày ${depth1}m)</div>
+                <div><span style="display:inline-block;width:12px;height:12px;background:#e6e6c8;border:1px solid #8d6e63;margin-right:5px;"></span><b>Lớp 2:</b> ${name2} (Dày ${depth2}m)</div>
+            </div>
         `;
     }
 
