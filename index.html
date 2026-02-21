@@ -18,7 +18,7 @@
 <body>
 
 <div class="container">
-    <h2>Trợ lý Thiết kế Móng</h2>
+    <h2>Trợ lý Thiết kế Móng Đơn</h2>
     
     <div class="step-box">
         <h3>1. Tra cứu địa chất</h3>
@@ -63,7 +63,15 @@
         const resultDiv = document.getElementById('result');
         const designSection = document.getElementById('design-section'); // Lấy thẻ design-section
         
-        // ... (Phần fetch dữ liệu từ Supabase giữ nguyên) ...
+        // Gọi đến đúng tên bảng ShallowFoundationCode và cột SFcode
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/ShallowFoundationCode?SFcode=eq.${input}`, {
+            headers: {
+                "apikey": SUPABASE_KEY,
+                "Authorization": `Bearer ${SUPABASE_KEY}`
+            }
+        });
+
+        const data = await response.json();
 
         if (data.length > 0) {
             currentSoilData = data[0];
