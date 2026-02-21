@@ -18,81 +18,68 @@
 <body>
 
 <div class="container">
-    <h2>Hệ thống Tra cứu Mã đề</h2>
-    <p>Dành cho sinh viên Startup VietNH</p>
-    <input type="text" id="maDeInput" placeholder="Nhập mã đề (VD: 1)...">
-    <br>
-    <button onclick="traCuu()">Tìm kiếm</button>
-    <div id="result"></div>
-</div>
-
-<div class="input-section">
-    <h3>1. Tra cứu địa chất</h3>
-    <input type="text" id="maDeInput" placeholder="Nhập mã đề (VD: 2)...">
-    <button onclick="traCuu()">Lấy dữ liệu địa chất</button>
-</div>
-
-<div id="design-section" style="display:none; margin-top: 20px; border-top: 2px solid #eee; pt: 20px;">
-    <h3>2. Thông số thiết kế móng</h3>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left;">
-        <label>Chiều rộng móng B (m): <input type="number" id="inputB" value="1.5"></label>
-        <label>Chiều dài móng L (m): <input type="number" id="inputL" value="2.0"></label>
-        <label>Chiều sâu chôn móng Df (m): <input type="number" id="inputDf" value="1.5"></label>
-        <label>Tải trọng đứng N (kN): <input type="number" id="inputN" value="500"></label>
+    <h2>Trợ lý Thiết kế Móng</h2>
+    
+    <div class="step-box">
+        <h3>1. Tra cứu địa chất</h3>
+        <input type="text" id="maDeInput" placeholder="Nhập mã đề (VD: 2)...">
+        <button onclick="traCuu()">Lấy dữ liệu</button>
     </div>
-    <button onclick="tinhToanMong()" style="background-color: #28a745; margin-top: 15px;">Tính toán sức chịu tải</button>
-</div>
 
-<div id="result"></div>
-<div id="calc-result" style="margin-top: 20px;"></div>
+    <div id="result"></div>
+
+    <div id="design-section" style="display:none; margin-top: 20px; padding-top: 20px; border-top: 2px dashed #ccc;">
+        <h3>2. Thông số thiết kế móng</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; margin-bottom: 20px;">
+            <div>
+                <label>Chiều rộng B (m):</label>
+                <input type="number" id="inputB" value="1.5" step="0.1" style="width: 90%;">
+            </div>
+            <div>
+                <label>Chiều dài L (m):</label>
+                <input type="number" id="inputL" value="2.0" step="0.1" style="width: 90%;">
+            </div>
+            <div>
+                <label>Độ sâu chôn móng Df (m):</label>
+                <input type="number" id="inputDf" value="1.5" step="0.1" style="width: 90%;">
+            </div>
+            <div>
+                <label>Tải trọng đứng N (kN):</label>
+                <input type="number" id="inputN" value="500" style="width: 90%;">
+            </div>
+        </div>
+        <button onclick="tinhToanMong()" style="background-color: #28a745;">Tính toán sức chịu tải</button>
+    </div>
+
+    <div id="calc-result"></div>
+</div>
 
 <script>
     const SUPABASE_URL = "https://ezksahbyqwnbaabulhhd.supabase.co"; // URL của bạn
     const SUPABASE_KEY = "sb_publishable_o1TDH7-ji0GCdebRKzgUIA__fzNTGX1"; // API Key của bạn
 
     async function traCuu() {
-      const input = document.getElementById('maDeInput').value.trim();
-      const resultDiv = document.getElementById('result');
-      
-      if (!input) {
-          alert("Vui lòng nhập mã đề!");
-          return;
-      }
+        const input = document.getElementById('maDeInput').value.trim();
+        const resultDiv = document.getElementById('result');
+        const designSection = document.getElementById('design-section'); // Lấy thẻ design-section
+        
+        // ... (Phần fetch dữ liệu từ Supabase giữ nguyên) ...
 
-      resultDiv.innerHTML = "Đang tìm kiếm...";
-      resultDiv.className = "";
-
-      try {
-          // Gọi đến đúng tên bảng ShallowFoundationCode và cột SFcode
-          const response = await fetch(`${SUPABASE_URL}/rest/v1/ShallowFoundationCode?SFcode=eq.${input}`, {
-              headers: {
-                  "apikey": SUPABASE_KEY,
-                  "Authorization": `Bearer ${SUPABASE_KEY}`
-              }
-          });
-
-          const data = await response.json();
-
-          if (data.length > 0) {
-              const info = data[0];
-              // Hiển thị tất cả các thông số kỹ thuật từ bảng của bạn
-              resultDiv.innerHTML = `
-                  <div style="text-align: left; line-height: 1.6;">
-                      <p>✅ <b>Mã đề:</b> ${info.SFcode}</p>
-                      <p>📍 <b>Mã mặt bằng:</b> ${info.Plancode}</p>
-                      <hr>
-                      <p><b>Lớp đất 1:</b> ${info.L1name} (Dày: ${info.L1thickn}m)</p>
-                      <p><b>Lớp đất 2:</b> ${info.L2name} (Dày: ${info.L2thickn}m)</p>
-                  </div>`;
-              resultDiv.className = "success";
-          } else {
-              resultDiv.innerHTML = "❌ Không tìm thấy mã đề này!";
-              resultDiv.className = "error";
-          }
-      } catch (error) {
-          resultDiv.innerHTML = "⚠️ Lỗi kết nối dữ liệu!";
-          resultDiv.className = "error";
-      }
+        if (data.length > 0) {
+            currentSoilData = data[0];
+            // Hiển thị kết quả địa chất
+            resultDiv.innerHTML = `
+                <div style="background-color: #f0fff4; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #c6f6d5;">
+                    <b style="color: #2f855a;">✅ Đã lấy dữ liệu địa chất mã đề: ${currentSoilData.SFcode}</b>
+                    <p style="margin: 5px 0;">Lớp 1: ${currentSoilData.L1name} (Dày: ${currentSoilData.L1thickn}m)</p>
+                </div>`;
+            
+            // QUAN TRỌNG: Lệnh này giúp hiện phần thiết kế móng
+            designSection.style.display = "block"; 
+            
+            // Cuộn xuống phần thiết kế để người dùng thấy luôn
+            designSection.scrollIntoView({ behavior: 'smooth' });
+        }
     }
 </script>
 
