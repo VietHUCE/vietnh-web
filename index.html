@@ -31,43 +31,49 @@
     const SUPABASE_KEY = "sb_publishable_o1TDH7-ji0GCdebRKzgUIA__fzNTGX1"; // API Key của bạn
 
     async function traCuu() {
-        const input = document.getElementById('maDeInput').value.trim();
-        const resultDiv = document.getElementById('result');
-        
-        if (!input) {
-            alert("Vui lòng nhập mã đề!");
-            return;
-        }
-
-        resultDiv.innerHTML = "Đang tìm kiếm...";
-        resultDiv.className = "";
-
-        try {
-            // Thay 'danh_sach_ma_de' bằng tên bảng bạn đã đặt trong Supabase
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/ShallowFoundationCode?SFcode=eq.${input}`, {
-                headers: {
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": `Bearer ${SUPABASE_KEY}`
-                }
-            });
-
-            const data = await response.json();
-
-            if (data.length > 0) {
-                const info = data[0];
-                // 'thong_so' là tên cột bạn đã tạo trong Supabase
-                resultDiv.innerHTML = `<strong>Thông số:</strong> ${info.thong_so}`;
-                resultDiv.className = "success";
-            } else {
-                resultDiv.innerHTML = "Không tìm thấy mã đề này!";
-                resultDiv.className = "error";
-            }
-        } catch (error) {
-            resultDiv.innerHTML = "Lỗi kết nối hệ thống!";
-            resultDiv.className = "error";
-            console.error(error);
-        }
+    const input = document.getElementById('maDeInput').value.trim();
+    const resultDiv = document.getElementById('result');
+    
+    if (!input) {
+        alert("Vui lòng nhập mã đề!");
+        return;
     }
+
+    resultDiv.innerHTML = "Đang tìm kiếm...";
+    resultDiv.className = "";
+
+    try {
+        // ĐÃ CẬP NHẬT: Tên bảng là 'ShallowFoundationCode' và cột lọc là 'SFcode'
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/ShallowFoundationCode?SFcode=eq.${input}`, {
+            headers: {
+                "apikey": SUPABASE_KEY,
+                "Authorization": `Bearer ${SUPABASE_KEY}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.length > 0) {
+            const info = data[0];
+            // Hiển thị các thông số từ bảng dữ liệu của bạn
+            resultDiv.innerHTML = `
+                <div style="text-align: left;">
+                    <p><strong>Mã đề:</strong> ${info.SFcode}</p>
+                    <p><strong>Plancode:</strong> ${info.Plancode}</p>
+                    <p><strong>L1name:</strong> ${info.L1name}</p>
+                    <p><strong>L1thickn:</strong> ${info.L1thickn}</p>
+                </div>`;
+            resultDiv.className = "success";
+        } else {
+            resultDiv.innerHTML = "Không tìm thấy mã đề này trong hệ thống!";
+            resultDiv.className = "error";
+        }
+    } catch (error) {
+        resultDiv.innerHTML = "Lỗi kết nối hoặc sai cấu hình bảng!";
+        resultDiv.className = "error";
+        console.error("Chi tiết lỗi:", error);
+    }
+}
 </script>
 
 </body>
