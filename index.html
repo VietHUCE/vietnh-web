@@ -1,22 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-  <meta charset="utf-8">
-  <title>Đồ án Nền Móng</title>
-  <meta description="Trang web cá nhân của giảng viên được lập để hỗ trợ sinh viên">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tra cứu Mã đề - VietNH Startup</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f4f4f9; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; }
+        input { padding: 10px; width: 250px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; }
+        button { padding: 10px 20px; background-color: #0070f3; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0051bb; }
+        #result { margin-top: 20px; padding: 15px; border-radius: 5px; min-height: 20px; }
+        .success { color: #28a745; background: #e6ffed; border: 1px solid #b7eb8f; }
+        .error { color: #dc3545; background: #fff1f0; border: 1px solid #ffa39e; }
+    </style>
 </head>
 <body>
-  <h1>Môn học Đồ án Nền Móng</h1>
-  <p>Học liệu dành cho sinh viên Trường Đại học Xây dựng Hà Nội</p>
-  <h2>Đề bài</h2>
-  <p>SV nhập đề bài, ấn nút --></p>
-  <ul>
-    <li>Chương 1 - Tính chất vật lý và phân loại đất</li>
-    <li>Chương 2 - Tính chất cơ học của đất</li>
-  </ul>
-  <h2>Chuẩn đầu ra</h2>
-  <figure>
-  <img src="https://cdn.freecodecamp.org/curriculum/labs/colosseo.jpg" alt="Alo">
-  <figcaption>Alo</figcaption>
+
+<div class="container">
+    <h2>Hệ thống Tra cứu Mã đề</h2>
+    <p>Dành cho sinh viên Startup VietNH</p>
+    <input type="text" id="maDeInput" placeholder="Nhập mã đề (VD: DE01)...">
+    <br>
+    <button onclick="traCuu()">Tìm kiếm</button>
+    <div id="result"></div>
+</div>
+
+<script>
+    const SUPABASE_URL = "https://ezksahbyqwnbaabulhhd.supabase.co"; // URL của bạn
+    const SUPABASE_KEY = "sb_publishable_o1TDH7-ji0GCdebRKzgUIA__fzNTGX1"; // API Key của bạn
+
+    async function traCuu() {
+        const input = document.getElementById('maDeInput').value.trim();
+        const resultDiv = document.getElementById('result');
+        
+        if (!input) {
+            alert("Vui lòng nhập mã đề!");
+            return;
+        }
+
+        resultDiv.innerHTML = "Đang tìm kiếm...";
+        resultDiv.className = "";
+
+        try {
+            // Thay 'danh_sach_ma_de' bằng tên bảng bạn đã đặt trong Supabase
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/danh_sach_ma_de?ma_de=eq.${input}`, {
+                headers: {
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": `Bearer ${SUPABASE_KEY}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.length > 0) {
+                const info = data[0];
+                // 'thong_so' là tên cột bạn đã tạo trong Supabase
+                resultDiv.innerHTML = `<strong>Thông số:</strong> ${info.thong_so}`;
+                resultDiv.className = "success";
+            } else {
+                resultDiv.innerHTML = "Không tìm thấy mã đề này!";
+                resultDiv.className = "error";
+            }
+        } catch (error) {
+            resultDiv.innerHTML = "Lỗi kết nối hệ thống!";
+            resultDiv.className = "error";
+            console.error(error);
+        }
+    }
+</script>
+
 </body>
 </html>
