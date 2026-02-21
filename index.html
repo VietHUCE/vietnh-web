@@ -81,6 +81,20 @@
                     <b style="color: #2f855a;">✅ Đã lấy dữ liệu địa chất mã đề: ${currentSoilData.SFcode}</b>
                     <p style="margin: 5px 0;">Lớp 1: ${currentSoilData.L1name} (Dày: ${currentSoilData.L1thickn}m)</p>
                 </div>`;
+
+            <div id="soil-profile-container" style="display:none; margin-top: 20px; text-align: center;">
+                <h4>Trụ địa chất minh họa</h4>
+                <canvas id="soilCanvas" width="200" height="400" style="border: 1px solid #ccc; background: #fff;"></canvas>
+                <div id="soil-legend" style="margin-top: 10px; font-size: 0.9em;"></div>
+            </div>
+
+            // Gọi hàm vẽ trụ địa chất với các thông số từ bảng ShallowFoundationCode
+            veTruDiaChat(
+                currentSoilData.L1thickn, 
+                currentSoilData.L2thickn, 
+                currentSoilData.L1name, 
+                currentSoilData.L2name
+            );
             
             // QUAN TRỌNG: Lệnh này giúp hiện phần thiết kế móng
             designSection.style.display = "block"; 
@@ -88,6 +102,48 @@
             // Cuộn xuống phần thiết kế để người dùng thấy luôn
             designSection.scrollIntoView({ behavior: 'smooth' });
         }
+    }
+
+    function veTruDiaChat(h1, h2, name1, name2) {
+        const canvas = document.getElementById('soilCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('soil-profile-container');
+        
+        container.style.display = "block"; // Hiện khung vẽ
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Xóa bản vẽ cũ
+
+        // Tỷ lệ vẽ: 1m thực tế = 40px trên canvas
+        const scale = 40; 
+        const startY = 20;
+        const width = 100;
+        const x = (canvas.width - width) / 2;
+
+        // Vẽ Lớp 1
+        const pixelH1 = h1 * scale;
+        ctx.fillStyle = "#e3d5b8"; // Màu đất lớp 1
+        ctx.fillRect(x, startY, width, pixelH1);
+        ctx.strokeStyle = "#8d6e63";
+        ctx.strokeRect(x, startY, width, pixelH1);
+        
+        // Ghi chú chiều dày lớp 1
+        ctx.fillStyle = "#000";
+        ctx.fillText(`${h1}m`, x + width + 5, startY + pixelH1/2);
+
+        // Vẽ Lớp 2
+        const pixelH2 = h2 * scale;
+        ctx.fillStyle = "#c2c5aa"; // Màu đất lớp 2
+        ctx.fillRect(x, startY + pixelH1, width, pixelH2);
+        ctx.strokeRect(x, startY + pixelH1, width, pixelH2);
+        
+        // Ghi chú chiều dày lớp 2
+        ctx.fillStyle = "#000";
+        ctx.fillText(`${h2}m`, x + width + 5, startY + pixelH1 + pixelH2/2);
+
+        // Cập nhật chú giải tên đất
+        document.getElementById('soil-legend').innerHTML = `
+            <span style="color:#e3d5b8">■</span> ${name1} | 
+            <span style="color:#c2c5aa">■</span> ${name2}
+        `;
     }
 </script>
 
