@@ -80,13 +80,14 @@
                 <div style="background-color: #f0fff4; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #c6f6d5;">
                     <b style="color: #2f855a;">✅ Đã lấy dữ liệu địa chất mã đề: ${currentSoilData.SFcode}</b>
                     <p style="margin: 5px 0;">Lớp 1: ${currentSoilData.L1name} (Dày: ${currentSoilData.L1thickn}m)</p>
-                </div>`;
-
-            <div id="soil-profile-container" style="display:none; margin-top: 20px; text-align: center;">
-                <h4>Trụ địa chất minh họa</h4>
-                <canvas id="soilCanvas" width="200" height="400" style="border: 1px solid #ccc; background: #fff;"></canvas>
-                <div id="soil-legend" style="margin-top: 10px; font-size: 0.9em;"></div>
-            </div>
+                </div>
+                
+                <div id="soil-profile-container" style="display:none; margin-top: 20px; text-align: center;">
+                    <h4>Trụ địa chất minh họa</h4>
+                    <canvas id="soilCanvas" width="200" height="400" style="border: 1px solid #ccc; background: #fff;"></canvas>
+                    <div id="soil-legend" style="margin-top: 10px; font-size: 0.9em;"></div>
+                </div>
+                `;
 
             // Gọi hàm vẽ trụ địa chất với các thông số từ bảng ShallowFoundationCode
             veTruDiaChat(
