@@ -31,49 +31,49 @@
     const SUPABASE_KEY = "sb_publishable_o1TDH7-ji0GCdebRKzgUIA__fzNTGX1"; // API Key của bạn
 
     async function traCuu() {
-    const input = document.getElementById('maDeInput').value.trim();
-    const resultDiv = document.getElementById('result');
-    
-    if (!input) {
-        alert("Vui lòng nhập mã đề!");
-        return;
+      const input = document.getElementById('maDeInput').value.trim();
+      const resultDiv = document.getElementById('result');
+      
+      if (!input) {
+          alert("Vui lòng nhập mã đề!");
+          return;
+      }
+
+      resultDiv.innerHTML = "Đang tìm kiếm...";
+      resultDiv.className = "";
+
+      try {
+          // Gọi đến đúng tên bảng ShallowFoundationCode và cột SFcode
+          const response = await fetch(`${SUPABASE_URL}/rest/v1/ShallowFoundationCode?SFcode=eq.${input}`, {
+              headers: {
+                  "apikey": SUPABASE_KEY,
+                  "Authorization": `Bearer ${SUPABASE_KEY}`
+              }
+          });
+
+          const data = await response.json();
+
+          if (data.length > 0) {
+              const info = data[0];
+              // Hiển thị tất cả các thông số kỹ thuật từ bảng của bạn
+              resultDiv.innerHTML = `
+                  <div style="text-align: left; line-height: 1.6;">
+                      <p>✅ <b>Mã đề:</b> ${info.SFcode}</p>
+                      <p>📍 <b>Mã mặt bằng:</b> ${info.Plancode}</p>
+                      <hr>
+                      <p><b>Lớp đất 1:</b> ${info.L1name} (Dày: ${info.L1thickn}m)</p>
+                      <p><b>Lớp đất 2:</b> ${info.L2name} (Dày: ${info.L2thickn}m)</p>
+                  </div>`;
+              resultDiv.className = "success";
+          } else {
+              resultDiv.innerHTML = "❌ Không tìm thấy mã đề này!";
+              resultDiv.className = "error";
+          }
+      } catch (error) {
+          resultDiv.innerHTML = "⚠️ Lỗi kết nối dữ liệu!";
+          resultDiv.className = "error";
+      }
     }
-
-    resultDiv.innerHTML = "Đang tìm kiếm...";
-    resultDiv.className = "";
-
-    try {
-        // ĐÃ CẬP NHẬT: Tên bảng là 'ShallowFoundationCode' và cột lọc là 'SFcode'
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/ShallowFoundationCode?SFcode=eq.${input}`, {
-            headers: {
-                "apikey": SUPABASE_KEY,
-                "Authorization": `Bearer ${SUPABASE_KEY}`
-            }
-        });
-
-        const data = await response.json();
-
-        if (data.length > 0) {
-            const info = data[0];
-            // Hiển thị các thông số từ bảng dữ liệu của bạn
-            resultDiv.innerHTML = `
-                <div style="text-align: left;">
-                    <p><strong>Mã đề:</strong> ${info.SFcode}</p>
-                    <p><strong>Plancode:</strong> ${info.Plancode}</p>
-                    <p><strong>L1name:</strong> ${info.L1name}</p>
-                    <p><strong>L1thickn:</strong> ${info.L1thickn}</p>
-                </div>`;
-            resultDiv.className = "success";
-        } else {
-            resultDiv.innerHTML = "Không tìm thấy mã đề này trong hệ thống!";
-            resultDiv.className = "error";
-        }
-    } catch (error) {
-        resultDiv.innerHTML = "Lỗi kết nối hoặc sai cấu hình bảng!";
-        resultDiv.className = "error";
-        console.error("Chi tiết lỗi:", error);
-    }
-}
 </script>
 
 </body>
