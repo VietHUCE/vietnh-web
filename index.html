@@ -26,6 +26,26 @@
     <div id="result"></div>
 </div>
 
+<div class="input-section">
+    <h3>1. Tra cứu địa chất</h3>
+    <input type="text" id="maDeInput" placeholder="Nhập mã đề (VD: 2)...">
+    <button onclick="traCuu()">Lấy dữ liệu địa chất</button>
+</div>
+
+<div id="design-section" style="display:none; margin-top: 20px; border-top: 2px solid #eee; pt: 20px;">
+    <h3>2. Thông số thiết kế móng</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left;">
+        <label>Chiều rộng móng B (m): <input type="number" id="inputB" value="1.5"></label>
+        <label>Chiều dài móng L (m): <input type="number" id="inputL" value="2.0"></label>
+        <label>Chiều sâu chôn móng Df (m): <input type="number" id="inputDf" value="1.5"></label>
+        <label>Tải trọng đứng N (kN): <input type="number" id="inputN" value="500"></label>
+    </div>
+    <button onclick="tinhToanMong()" style="background-color: #28a745; margin-top: 15px;">Tính toán sức chịu tải</button>
+</div>
+
+<div id="result"></div>
+<div id="calc-result" style="margin-top: 20px;"></div>
+
 <script>
     const SUPABASE_URL = "https://ezksahbyqwnbaabulhhd.supabase.co"; // URL của bạn
     const SUPABASE_KEY = "sb_publishable_o1TDH7-ji0GCdebRKzgUIA__fzNTGX1"; // API Key của bạn
