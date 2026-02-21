@@ -58,93 +58,114 @@
     const SUPABASE_URL = "https://ezksahbyqwnbaabulhhd.supabase.co"; // URL của bạn
     const SUPABASE_KEY = "sb_publishable_o1TDH7-ji0GCdebRKzgUIA__fzNTGX1"; // API Key của bạn
 
+    let currentSoilData = null; // Lưu trữ để dùng cho tính toán móng
+
     async function traCuu() {
         const input = document.getElementById('maDeInput').value.trim();
         const resultDiv = document.getElementById('result');
-        const designSection = document.getElementById('design-section'); // Lấy thẻ design-section
+        const designSection = document.getElementById('design-section');
         
-        // Gọi đến đúng tên bảng ShallowFoundationCode và cột SFcode
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/ShallowFoundationCode?SFcode=eq.${input}`, {
-            headers: {
-                "apikey": SUPABASE_KEY,
-                "Authorization": `Bearer ${SUPABASE_KEY}`
-            }
-        });
+        if (!input) { alert("Vui lòng nhập mã đề!"); return; }
 
-        const data = await response.json();
+        try {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/ShallowFoundationCode?SFcode=eq.${input}`, {
+                headers: {
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": `Bearer ${SUPABASE_KEY}`
+                }
+            });
+            const data = await response.json();
 
-        if (data.length > 0) {
-            currentSoilData = data[0];
-            // Hiển thị kết quả địa chất
-            resultDiv.innerHTML = `
-                <div style="background-color: #f0fff4; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #c6f6d5;">
-                    <b style="color: #2f855a;">✅ Đã lấy dữ liệu địa chất mã đề: ${currentSoilData.SFcode}</b>
-                    <p style="margin: 5px 0;">Lớp 1: ${currentSoilData.L1name} (Dày: ${currentSoilData.L1thickn}m)</p>
-                </div>
+            if (data.length > 0) {
+                currentSoilData = data[0];
                 
-                <div id="soil-profile-container" style="display:none; margin-top: 20px; text-align: center;">
-                    <h4>Trụ địa chất minh họa</h4>
-                    <canvas id="soilCanvas" width="200" height="400" style="border: 1px solid #ccc; background: #fff;"></canvas>
-                    <div id="soil-legend" style="margin-top: 10px; font-size: 0.9em;"></div>
-                </div>
+                // 1. Hiển thị thông tin văn bản
+                resultDiv.innerHTML = `
+                    <div style="background-color: #f0fff4; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #c6f6d5; text-align: left;">
+                        <b style="color: #2f855a;">✅ Đã lấy dữ liệu mã đề: ${currentSoilData.SFcode}</b>
+                        <p style="margin: 5px 0;"><b>Địa tầng:</b> ${currentSoilData.L1name} dày ${currentSoilData.L1thickn}m, phía dưới là ${currentSoilData.L2name}.</p>
+                    </div>
+                    <div id="soil-profile-area" style="margin-top: 20px;">
+                        <h4>Hình ảnh trụ địa chất</h4>
+                        <canvas id="soilCanvas" width="200" height="400" style="border: 1px solid #ccc; background: #fff; border-radius: 4px;"></canvas>
+                        <div id="soil-legend" style="margin-top: 10px; font-size: 0.9em; font-weight: bold;"></div>
+                    </div>
                 `;
 
-            // Gọi hàm vẽ trụ địa chất với các thông số từ bảng ShallowFoundationCode
-            veTruDiaChat(
-                currentSoilData.L1thickn, 
-                currentSoilData.L2thickn, 
-                currentSoilData.L1name, 
-                currentSoilData.L2name
-            );
-            
-            // QUAN TRỌNG: Lệnh này giúp hiện phần thiết kế móng
-            designSection.style.display = "block"; 
-            
-            // Cuộn xuống phần thiết kế để người dùng thấy luôn
-            designSection.scrollIntoView({ behavior: 'smooth' });
+                // 2. Vẽ trụ địa chất (Sử dụng setTimeout để đảm bảo Canvas đã tồn tại trong DOM)
+                setTimeout(() => {
+                    veTruDiaChat(
+                        currentSoilData.L1thickn, 
+                        currentSoilData.L2thickn, 
+                        currentSoilData.L1name, 
+                        currentSoilData.L2name
+                    );
+                }, 100);
+                
+                // 3. Hiện phần thiết kế móng
+                designSection.style.display = "block"; 
+                designSection.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                resultDiv.innerHTML = "<p class='error'>Không tìm thấy mã đề này!</p>";
+            }
+        } catch (error) {
+            console.error(error);
+            resultDiv.innerHTML = "<p class='error'>Lỗi kết nối database!</p>";
         }
     }
 
     function veTruDiaChat(h1, h2, name1, name2) {
         const canvas = document.getElementById('soilCanvas');
+        if (!canvas) return;
         const ctx = canvas.getContext('2d');
-        const container = document.getElementById('soil-profile-container');
         
-        container.style.display = "block"; // Hiện khung vẽ
-        ctx.clearRect(0, 0, canvas.width, canvas.height); // Xóa bản vẽ cũ
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Tỷ lệ vẽ: 1m thực tế = 40px trên canvas
-        const scale = 40; 
-        const startY = 20;
-        const width = 100;
+        const scale = 40; // 1m = 40px
+        const startY = 30;
+        const width = 80;
         const x = (canvas.width - width) / 2;
 
-        // Vẽ Lớp 1
+        // Lớp 1
         const pixelH1 = h1 * scale;
-        ctx.fillStyle = "#e3d5b8"; // Màu đất lớp 1
+        ctx.fillStyle = "#e3d5b8"; 
         ctx.fillRect(x, startY, width, pixelH1);
         ctx.strokeStyle = "#8d6e63";
+        ctx.lineWidth = 2;
         ctx.strokeRect(x, startY, width, pixelH1);
         
-        // Ghi chú chiều dày lớp 1
-        ctx.fillStyle = "#000";
-        ctx.fillText(`${h1}m`, x + width + 5, startY + pixelH1/2);
+        // Ghi chú lớp 1
+        ctx.fillStyle = "#333";
+        ctx.font = "12px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText(`${h1}m`, x + width + 10, startY + pixelH1/2);
 
-        // Vẽ Lớp 2
+        // Lớp 2
         const pixelH2 = h2 * scale;
-        ctx.fillStyle = "#c2c5aa"; // Màu đất lớp 2
+        ctx.fillStyle = "#c2c5aa"; 
         ctx.fillRect(x, startY + pixelH1, width, pixelH2);
         ctx.strokeRect(x, startY + pixelH1, width, pixelH2);
         
-        // Ghi chú chiều dày lớp 2
-        ctx.fillStyle = "#000";
-        ctx.fillText(`${h2}m`, x + width + 5, startY + pixelH1 + pixelH2/2);
+        // Ghi chú lớp 2
+        ctx.fillText(`${h2}m`, x + width + 10, startY + pixelH1 + pixelH2/2);
 
-        // Cập nhật chú giải tên đất
+        // Đường mực nước tĩnh (Minh họa thêm cho chuyên nghiệp)
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.moveTo(x - 20, startY);
+        ctx.lineTo(x + width + 20, startY);
+        ctx.stroke();
+        ctx.fillText("Mặt đất", x - 60, startY);
+
         document.getElementById('soil-legend').innerHTML = `
-            <span style="color:#e3d5b8">■</span> ${name1} | 
+            <span style="color:#e3d5b8">■</span> ${name1} <br>
             <span style="color:#c2c5aa">■</span> ${name2}
         `;
+    }
+
+    function tinhToanMong() {
+        // Hàm này sẽ dùng dữ liệu trong currentSoilData và các input B, L, Df để tính toán
+        alert("Hệ thống đã sẵn sàng tính toán với dữ liệu mã đề " + currentSoilData.SFcode);
     }
 </script>
 
