@@ -87,7 +87,7 @@
                     </div>
                     <div id="soil-profile-area" style="margin-top: 20px;">
                         <h4>Hình ảnh trụ địa chất</h4>
-                        <canvas id="soilCanvas" width="200" height="400" style="border: 1px solid #ccc; background: #fff; border-radius: 4px;"></canvas>
+                        <canvas id="soilCanvas" width="300" height="400" style="border: 1px solid #ccc; background: #fff; border-radius: 4px;"></canvas>
                         <div id="soil-legend" style="margin-top: 10px; font-size: 1.2em; font-weight: bold;"></div>
                     </div>
                 `;
@@ -166,8 +166,8 @@
 
         // Các thông số vẽ
         const topMargin = 50;   // Tăng lề trên
-        const leftMargin = 50;  // Tăng lề trái cho thước đo to hơn
-        const colWidth = 110;   // Tăng chiều rộng cột trụ một chút
+        const leftMargin = 90;  // Tăng lề trái cho thước đo to hơn
+        const colWidth = 100;   // Tăng chiều rộng cột trụ một chút
         let scale = 300 / totalDepth; 
         if (scale < 30) scale = 30;
         if (scale > 60) scale = 60;
