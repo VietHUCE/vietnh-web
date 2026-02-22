@@ -242,8 +242,95 @@
         }
 
         function tinhToanMong() {
-            // Hàm này sẽ dùng dữ liệu trong currentSoilData và các input B, L, Df để tính toán
-            alert("Hệ thống đã sẵn sàng tính toán với dữ liệu mã đề " + currentSoilData.SFcode);
+            // Kiểm tra xem đã tra cứu dữ liệu chưa
+            if (!currentSoilData) {
+                alert("⚠️ Vui lòng nhập mã đề và tra cứu dữ liệu địa chất trước khi tính toán!");
+                return;
+            }
+
+            // 1. Lấy thông số từ giao diện nhập liệu
+            const B = parseFloat(document.getElementById('inputB').value);
+            const L = parseFloat(document.getElementById('inputL').value);
+            const Df = parseFloat(document.getElementById('inputDf').value);
+            const N = parseFloat(document.getElementById('inputN').value); // Tải trọng đứng
+
+            const thicL1 = parseFloat(currentSoilData.L1thickn);
+
+            // 2. Xác định lớp đất đặt móng dựa vào Df
+            let tenLopDatMong = "";
+            // LƯU Ý: Giả định các biến c, phi, gamma lấy từ Database. 
+            // Bạn cần thay thế L1c, L1phi... bằng đúng tên cột trong bảng Supabase của bạn
+            let c = 0, phi = 0, gamma = 0; 
+
+            if (Df <= thicL1) {
+                tenLopDatMong = currentSoilData.L1name + " (Lớp 1)";
+                c = currentSoilData.L1c || 15;       // Lực dính (kPa) - Đang để số giả định nếu DB chưa có
+                phi = currentSoilData.L1phi || 10;     // Góc ma sát (độ)
+                gamma = currentSoilData.L1gamma || 18; // Trọng lượng riêng (kN/m3)
+            } else {
+                tenLopDatMong = currentSoilData.L2name + " (Lớp 2)";
+                c = currentSoilData.L2c || 20;       
+                phi = currentSoilData.L2phi || 25;     
+                gamma = currentSoilData.L2gamma || 19; 
+            }
+
+            // 3. Tính toán sức chịu tải (Mô phỏng công thức Terzaghi / TCVN)
+            // Chuyển góc ma sát sang radian để tính sin, cos
+            const phiRad = phi * Math.PI / 180;
+            
+            // Tính các hệ số sức chịu tải (Công thức gần đúng)
+            const Nq = Math.exp(Math.PI * Math.tan(phiRad)) * Math.pow(Math.tan(Math.PI/4 + phiRad/2), 2);
+            const Nc = (Nq - 1) / Math.tan(phiRad);
+            const Ngamma = 2 * (Nq + 1) * Math.tan(phiRad);
+
+            // Công thức tính sức chịu tải cực hạn (q_ult) cho móng chữ nhật
+            const q_ult = c * Nc * (1 + 0.3 * (B/L)) + gamma * Df * Nq + 0.5 * gamma * B * Ngamma * (1 - 0.2 * (B/L));
+            
+            // Sức chịu tải cho phép (R) - Hệ số an toàn Fs = 3
+            const Fs = 3;
+            const R_allowable = q_ult / Fs;
+
+            // Áp lực thực tế dưới đáy móng (P)
+            const DienTich = B * L;
+            const P_actual = N / DienTich + gamma * Df;
+
+            // Đánh giá an toàn
+            const isSafe = P_actual <= R_allowable;
+            const statusColor = isSafe ? "#28a745" : "#dc3545";
+            const statusText = isSafe ? "ĐẠT (An toàn)" : "KHÔNG ĐẠT (Cần tăng kích thước B, L)";
+
+            // 4. Hiển thị kết quả ra giao diện
+            const resultDiv = document.getElementById('calc-result');
+            resultDiv.innerHTML = `
+                <div style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 25px; text-align: left;">
+                    <h3 style="margin-top:0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">📊 Báo cáo Thiết kế Móng</h3>
+                    
+                    <p><b>1. Lớp đất đặt móng:</b> ${tenLopDatMong}</p>
+                    <p style="color: #555; font-size: 0.9em;"><i>Thông số tự động lấy từ DB: $c$ = ${c} kPa, $\\phi$ = ${phi}°, $\\gamma$ = ${gamma} kN/m³</i></p>
+                    
+                    <table style="width: 100%; margin-top: 15px; border-collapse: collapse;">
+                        <tr style="background: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd;">Áp lực cực hạn nền đất ($q_{ult}$)</td>
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">${q_ult.toFixed(1)} kPa</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;">Sức chịu tải cho phép ($R$)</td>
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; color: #007bff;">${R_allowable.toFixed(1)} kPa</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd;">Áp lực thực tế dưới đáy móng ($P$)</td>
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">${P_actual.toFixed(1)} kPa</td>
+                        </tr>
+                    </table>
+
+                    <div style="margin-top: 20px; padding: 15px; border-radius: 5px; background: ${isSafe ? '#e6ffed' : '#fff1f0'}; border: 1px solid ${statusColor}; text-align: center;">
+                        <h4 style="margin: 0; color: ${statusColor};">Kết luận: ${statusText}</h4>
+                    </div>
+                </div>
+            `;
+            
+            // Cuộn xuống xem kết quả
+            resultDiv.scrollIntoView({ behavior: 'smooth' });
         }
     </script>
 
