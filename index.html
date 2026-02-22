@@ -15,6 +15,19 @@
         .error { color: #dc3545; background: #fff1f0; border: 1px solid #ffa39e; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']] // Khai báo dấu $ dùng cho công thức trên cùng 1 dòng
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+    </script>
 </head>
 <body>
 
@@ -331,6 +344,14 @@
             
             // Cuộn xuống xem kết quả
             resultDiv.scrollIntoView({ behavior: 'smooth' });
+
+            // --- THÊM ĐOẠN NÀY ---
+            // Yêu cầu MathJax render lại các công thức toán học trong bảng kết quả
+            if (window.MathJax) {
+                MathJax.typesetPromise([resultDiv]).catch(function (err) {
+                    console.error('Lỗi MathJax: ', err.message);
+                });
+            }
         }
     </script>
 
