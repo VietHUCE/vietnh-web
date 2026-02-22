@@ -14,258 +14,233 @@
         .success { color: #28a745; background: #e6ffed; border: 1px solid #b7eb8f; }
         .error { color: #dc3545; background: #fff1f0; border: 1px solid #ffa39e; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<div class="container">
-    <h2>Trợ lý Thiết kế Móng Đơn</h2>
-    
-    <div class="step-box">
-        <h3>1. Tra cứu địa chất</h3>
-        <input type="text" id="maDeInput" placeholder="Nhập mã đề (VD: 2)...">
-        <button onclick="traCuu()">Lấy dữ liệu</button>
-    </div>
-
-    <div id="result"></div>
-
-    <div id="design-section" style="display:none; margin-top: 20px; padding-top: 20px; border-top: 2px dashed #ccc;">
-        <h3>2. Thông số thiết kế móng</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; margin-bottom: 20px;">
-            <div>
-                <label>Chiều rộng B (m):</label>
-                <input type="number" id="inputB" value="1.5" step="0.1" style="width: 90%;">
-            </div>
-            <div>
-                <label>Chiều dài L (m):</label>
-                <input type="number" id="inputL" value="2.0" step="0.1" style="width: 90%;">
-            </div>
-            <div>
-                <label>Độ sâu chôn móng Df (m):</label>
-                <input type="number" id="inputDf" value="1.5" step="0.1" style="width: 90%;">
-            </div>
-            <div>
-                <label>Tải trọng đứng N (kN):</label>
-                <input type="number" id="inputN" value="500" style="width: 90%;">
-            </div>
+    <div class="container">
+        <h2>Trợ lý Thiết kế Móng Đơn</h2>
+        
+        <div class="step-box">
+            <h3>1. Tra cứu địa chất</h3>
+            <input type="text" id="maDeInput" placeholder="Nhập mã đề (VD: 2)...">
+            <button onclick="traCuu()">Lấy dữ liệu</button>
         </div>
-        <button onclick="tinhToanMong()" style="background-color: #28a745;">Tính toán sức chịu tải</button>
+
+        <div id="soil-profile-container" style="display:none; margin-top: 30px; text-align: center;">
+            <h4 style="margin-bottom: 15px;">Hình ảnh trụ địa chất tương tác</h4>
+            <div style="width: 350px; height: 500px; margin: 0 auto;">
+                <canvas id="soilChart"></canvas>
+            </div>
+            <p style="font-size: 0.9em; color: #666; margin-top: 10px;">* Di chuyển chuột vào các lớp đất để xem chi tiết.</p>
+        </div>
+
+        <div id="design-section" style="display:none; margin-top: 20px; padding-top: 20px; border-top: 2px dashed #ccc;">
+            <h3>2. Thông số thiết kế móng</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; margin-bottom: 20px;">
+                <div>
+                    <label>Chiều rộng B (m):</label>
+                    <input type="number" id="inputB" value="1.5" step="0.1" style="width: 90%;">
+                </div>
+                <div>
+                    <label>Chiều dài L (m):</label>
+                    <input type="number" id="inputL" value="2.0" step="0.1" style="width: 90%;">
+                </div>
+                <div>
+                    <label>Độ sâu chôn móng Df (m):</label>
+                    <input type="number" id="inputDf" value="1.5" step="0.1" style="width: 90%;">
+                </div>
+                <div>
+                    <label>Tải trọng đứng N (kN):</label>
+                    <input type="number" id="inputN" value="500" style="width: 90%;">
+                </div>
+            </div>
+            <button onclick="tinhToanMong()" style="background-color: #28a745;">Tính toán sức chịu tải</button>
+        </div>
+
+        <div id="calc-result"></div>
     </div>
 
-    <div id="calc-result"></div>
-</div>
+    <script>
+        const SUPABASE_URL = "https://ezksahbyqwnbaabulhhd.supabase.co"; // URL của bạn
+        const SUPABASE_KEY = "sb_publishable_o1TDH7-ji0GCdebRKzgUIA__fzNTGX1"; // API Key của bạn
 
-<script>
-    const SUPABASE_URL = "https://ezksahbyqwnbaabulhhd.supabase.co"; // URL của bạn
-    const SUPABASE_KEY = "sb_publishable_o1TDH7-ji0GCdebRKzgUIA__fzNTGX1"; // API Key của bạn
+        let currentSoilData = null; // Lưu trữ để dùng cho tính toán móng
 
-    let currentSoilData = null; // Lưu trữ để dùng cho tính toán móng
+        async function traCuu() {
+            const input = document.getElementById('maDeInput').value.trim();
+            const resultDiv = document.getElementById('result');
+            const designSection = document.getElementById('design-section');
+            
+            if (!input) { alert("Vui lòng nhập mã đề!"); return; }
 
-    async function traCuu() {
-        const input = document.getElementById('maDeInput').value.trim();
-        const resultDiv = document.getElementById('result');
-        const designSection = document.getElementById('design-section');
-        
-        if (!input) { alert("Vui lòng nhập mã đề!"); return; }
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/ShallowFoundationCode?SFcode=eq.${input}`, {
+                    headers: {
+                        "apikey": SUPABASE_KEY,
+                        "Authorization": `Bearer ${SUPABASE_KEY}`
+                    }
+                });
+                const data = await response.json();
 
-        try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/ShallowFoundationCode?SFcode=eq.${input}`, {
-                headers: {
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": `Bearer ${SUPABASE_KEY}`
-                }
-            });
-            const data = await response.json();
+                if (data.length > 0) {
+                    currentSoilData = data[0];
+                    
+                    // 1. Hiển thị thông tin văn bản
+                    resultDiv.innerHTML = `
+                        <div style="background-color: #f0fff4; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #c6f6d5; text-align: left;">
+                            <b style="color: #2f855a;">✅ Đã lấy dữ liệu mã đề: ${currentSoilData.SFcode}</b>
+                            <p style="margin: 5px 0;"><b>Địa tầng:</b> ${currentSoilData.L1name} dày ${currentSoilData.L1thickn}m, phía dưới là ${currentSoilData.L2name}.</p>
+                        </div>
+                        <div id="soil-profile-area" style="margin-top: 20px;">
+                            <h4>Hình ảnh trụ địa chất</h4>
+                            <canvas id="soilCanvas" width="300" height="400" style="border: 1px solid #ccc; background: #fff; border-radius: 4px;"></canvas>
+                            <div id="soil-legend" style="margin-top: 10px; font-size: 1.2em; font-weight: bold;"></div>
+                        </div>
+                    `;
 
-            if (data.length > 0) {
-                currentSoilData = data[0];
-                
-                // 1. Hiển thị thông tin văn bản
-                resultDiv.innerHTML = `
-                    <div style="background-color: #f0fff4; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #c6f6d5; text-align: left;">
-                        <b style="color: #2f855a;">✅ Đã lấy dữ liệu mã đề: ${currentSoilData.SFcode}</b>
-                        <p style="margin: 5px 0;"><b>Địa tầng:</b> ${currentSoilData.L1name} dày ${currentSoilData.L1thickn}m, phía dưới là ${currentSoilData.L2name}.</p>
-                    </div>
-                    <div id="soil-profile-area" style="margin-top: 20px;">
-                        <h4>Hình ảnh trụ địa chất</h4>
-                        <canvas id="soilCanvas" width="300" height="400" style="border: 1px solid #ccc; background: #fff; border-radius: 4px;"></canvas>
-                        <div id="soil-legend" style="margin-top: 10px; font-size: 1.2em; font-weight: bold;"></div>
-                    </div>
-                `;
-
-                // 2. Vẽ trụ địa chất (Sử dụng setTimeout để đảm bảo Canvas đã tồn tại trong DOM)
-                setTimeout(() => {
-                    veTruDiaChat(
-                        currentSoilData.L1thickn, 
-                        currentSoilData.L2thickn, 
-                        currentSoilData.L1name, 
-                        currentSoilData.L2name
-                    );
-                }, 100);
-                
-                // 3. Hiện phần thiết kế móng
-                designSection.style.display = "block"; 
-                designSection.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                resultDiv.innerHTML = "<p class='error'>Không tìm thấy mã đề này!</p>";
-            }
-        } catch (error) {
-            console.error(error);
-            resultDiv.innerHTML = "<p class='error'>Lỗi kết nối database!</p>";
-        }
-    }
-
-    // --- HÀM VẼ HỌA TIẾT ĐẤT (MỚI) ---
-    function drawSoilPattern(ctx, type, x, y, width, height) {
-        ctx.save(); // Lưu trạng thái canvas hiện tại
-        ctx.beginPath();
-        ctx.rect(x, y, width, height); // Tạo vùng giới hạn vẽ pattern
-        ctx.clip(); // Chỉ vẽ trong vùng hình chữ nhật của lớp đất
-
-        if (type === 'clay') { // Họa tiết cho Đất dính (Sét, Á sét...)
-            ctx.strokeStyle = "rgba(100, 80, 60, 0.3)"; // Màu nâu nhạt, trong suốt
-            ctx.lineWidth = 1;
-            // Vẽ các gạch ngắn ngẫu nhiên
-            for (let i = 0; i < width * height / 200; i++) {
-                const px = x + Math.random() * width;
-                const py = y + Math.random() * height;
-                const length = 5 + Math.random() * 5;
-                ctx.beginPath();
-                ctx.moveTo(px, py);
-                ctx.lineTo(px + length, py + Math.random() * 2); // Gạch hơi xiên
-                ctx.stroke();
-            }
-        } else if (type === 'sand') { // Họa tiết cho Đất rời (Cát, Á cát...)
-            ctx.fillStyle = "rgba(80, 80, 80, 0.2)"; // Màu xám chấm, trong suốt
-            // Vẽ các chấm nhỏ ngẫu nhiên
-            for (let i = 0; i < width * height / 50; i++) {
-                const px = x + Math.random() * width;
-                const py = y + Math.random() * height;
-                ctx.beginPath();
-                ctx.arc(px, py, 1, 0, Math.PI * 2); // Chấm tròn bán kính 1px
-                ctx.fill();
-            }
-        }
-        ctx.restore(); // Khôi phục trạng thái canvas để không ảnh hưởng phần khác
-    }
-
-    // --- HÀM VẼ TRỤ ĐỊA CHẤT NÂNG CẤP (FONT TO & PATTERN) ---
-    function veTruDiaChat(h1, h2, name1, name2) {
-        const canvas = document.getElementById('soilCanvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        
-        // 1. Thiết lập cơ bản
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // Tăng font chữ mặc định lên 14px
-        ctx.font = "14px Arial"; 
-        ctx.textAlign = "center";
-
-        const depth1 = parseFloat(h1);
-        const depth2 = parseFloat(h2);
-        const totalDepth = depth1 + depth2;
-
-        // Các thông số vẽ
-        const topMargin = 50;   // Tăng lề trên
-        const leftMargin = 90;  // Tăng lề trái cho thước đo to hơn
-        const colWidth = 100;   // Tăng chiều rộng cột trụ một chút
-        let scale = 300 / totalDepth; 
-        if (scale < 30) scale = 30;
-        if (scale > 60) scale = 60;
-        
-        const startX = leftMargin;
-        const startY = topMargin;
-
-        // --- PHẦN 1: VẼ TIÊU ĐỀ & MẶT ĐẤT ---
-        ctx.fillStyle = "#222";
-        // Tiêu đề to và đậm hơn (18px Bold)
-        ctx.font = "bold 18px Arial";
-        ctx.fillText("TRỤ ĐỊA CHẤT", canvas.width / 2, 25);
-        
-        ctx.beginPath();
-        ctx.moveTo(startX - 15, startY);
-        ctx.lineTo(startX + colWidth + 25, startY);
-        ctx.strokeStyle = "#444";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        // Font chữ mặt đất to hơn (13px)
-        ctx.font = "13px Arial";
-        ctx.textAlign = "right";
-        ctx.fillText("Mặt đất (0.0m)", startX - 5, startY - 5);
-
-        // --- PHẦN 2: VẼ CÁC LỚP ĐẤT VỚI PATTERN ---
-        ctx.textAlign = "left";
-        ctx.lineWidth = 1.5; // Viền đậm hơn một chút
-
-        // Lớp 1 (Giả định là đất loại sét)
-        const pixelH1 = depth1 * scale;
-        let grd1 = ctx.createLinearGradient(startX, startY, startX + colWidth, startY);
-        grd1.addColorStop(0, "#dcb993"); 
-        grd1.addColorStop(1, "#cbae85");
-        ctx.fillStyle = grd1;
-        ctx.fillRect(startX, startY, colWidth, pixelH1);
-        // -> GỌI HÀM VẼ PATTERN 'clay' (SÉT)
-        drawSoilPattern(ctx, 'clay', startX, startY, colWidth, pixelH1);
-        ctx.strokeRect(startX, startY, colWidth, pixelH1);
-
-        // Lớp 2 (Giả định là đất loại cát)
-        const pixelH2 = depth2 * scale;
-        let grd2 = ctx.createLinearGradient(startX, startY + pixelH1, startX + colWidth, startY + pixelH1);
-        grd2.addColorStop(0, "#e6e6c8");
-        grd2.addColorStop(1, "#d4d4b4");
-        ctx.fillStyle = grd2;
-        ctx.fillRect(startX, startY + pixelH1, colWidth, pixelH2);
-        // -> GỌI HÀM VẼ PATTERN 'sand' (CÁT)
-        drawSoilPattern(ctx, 'sand', startX + pixelH1, colWidth, pixelH2);
-        ctx.strokeRect(startX, startY + pixelH1, colWidth, pixelH2);
-
-        // --- PHẦN 3: VẼ THƯỚC ĐO ĐỘ SÂU (FONT TO HƠN) ---
-        ctx.strokeStyle = "#666";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(startX, startY + pixelH1 + pixelH2 + 20);
-        ctx.stroke();
-
-        ctx.textAlign = "right";
-        // Font chữ thước đo to hơn (12px)
-        ctx.font = "12px Arial";
-        ctx.fillStyle = "#444";
-
-        for (let d = 0.5; d <= Math.ceil(totalDepth); d += 0.5) {
-            const yPos = startY + d * scale;
-            if (d <= totalDepth + 0.1) {
-                if (Number.isInteger(d)) {
-                    ctx.beginPath(); ctx.moveTo(startX - 10, yPos); ctx.lineTo(startX, yPos); ctx.stroke();
-                    ctx.fillText(d.toFixed(1) + "m", startX - 12, yPos + 4);
+                    // 2. Vẽ trụ địa chất (Sử dụng setTimeout để đảm bảo Canvas đã tồn tại trong DOM)
+                    setTimeout(() => {
+                        veTruDiaChat(
+                            currentSoilData.L1thickn, 
+                            currentSoilData.L2thickn, 
+                            currentSoilData.L1name, 
+                            currentSoilData.L2name
+                        );
+                    }, 100);
+                    
+                    // 3. Hiện phần thiết kế móng
+                    designSection.style.display = "block"; 
+                    designSection.scrollIntoView({ behavior: 'smooth' });
                 } else {
-                    ctx.beginPath(); ctx.moveTo(startX - 6, yPos); ctx.lineTo(startX, yPos); ctx.stroke();
+                    resultDiv.innerHTML = "<p class='error'>Không tìm thấy mã đề này!</p>";
                 }
+            } catch (error) {
+                console.error(error);
+                resultDiv.innerHTML = "<p class='error'>Lỗi kết nối database!</p>";
             }
         }
 
-        // --- PHẦN 4: GHI CHÚ ĐỘ SÂU (FONT TO & ĐẬM) ---
-        ctx.textAlign = "left";
-        ctx.fillStyle = "#000";
-        // Font chữ ghi chú độ sâu to và đậm hơn (14px Bold)
-        ctx.font = "bold 14px Arial";
+        let mySoilChart = null; // Biến toàn cục để lưu trữ đối tượng biểu đồ
 
-        ctx.fillText(`▼ ${depth1.toFixed(1)}m`, startX + colWidth + 8, startY + pixelH1 + 5);
-        ctx.fillText(`▼ ${(depth1 + depth2).toFixed(1)}m`, startX + colWidth + 8, startY + pixelH1 + pixelH2 + 5);
+        function veTruDiaChat(h1, h2, name1, name2) {
+            const ctx = document.getElementById('soilChart').getContext('2d');
 
-        // --- PHẦN 5: CẬP NHẬT CHÚ GIẢI ---
-        document.getElementById('soil-legend').innerHTML = `
-            <div style="text-align:left; margin-top:15px; border-top:1px dotted #ccc; padding-top:10px; font-size: 14px;">
-                <div style="margin-bottom:6px;"><span style="display:inline-block;width:16px;height:16px;background:repeating-linear-gradient(45deg, #dcb993, #dcb993 2px, #cbae85 2px, #cbae85 4px);border:1px solid #8d6e63;margin-right:8px;vertical-align:middle;"></span><b>Lớp 1:</b> ${name1} (Dày ${depth1}m)</div>
-                <div><span style="display:inline-block;width:16px;height:16px;background:radial-gradient(#999 10%, transparent 15%) 0 0, radial-gradient(#999 10%, transparent 15%) 4px 4px; background-color:#e6e6c8; background-size:8px 8px; border:1px solid #8d6e63;margin-right:8px;vertical-align:middle;"></span><b>Lớp 2:</b> ${name2} (Dày ${depth2}m)</div>
-            </div>
-        `;
-    }
+            // Nếu đã có biểu đồ cũ thì hủy nó đi trước khi vẽ cái mới để tránh lỗi chồng lấn
+            if (mySoilChart) {
+                mySoilChart.destroy();
+            }
 
-    function tinhToanMong() {
-        // Hàm này sẽ dùng dữ liệu trong currentSoilData và các input B, L, Df để tính toán
-        alert("Hệ thống đã sẵn sàng tính toán với dữ liệu mã đề " + currentSoilData.SFcode);
-    }
-</script>
+            // Chuyển đổi dữ liệu độ dày sang số thực
+            const depth1 = parseFloat(h1);
+            const depth2 = parseFloat(h2);
+
+            // Cấu hình dữ liệu cho biểu đồ
+            const data = {
+                labels: ['Trụ địa chất'], // Nhãn cho cột duy nhất
+                datasets: [
+                    {
+                        label: `Lớp 1: ${name1}`, // Tên hiển thị trong chú giải và tooltip
+                        data: [depth1], // Độ dày lớp 1
+                        backgroundColor: 'rgba(220, 185, 147, 0.9)', // Màu sắc nét, chuyên nghiệp (Sét)
+                        borderColor: '#8d6e63',
+                        borderWidth: 2,
+                        barPercentage: 0.6, // Độ rộng của cột
+                    },
+                    {
+                        label: `Lớp 2: ${name2}`,
+                        data: [depth2], // Độ dày lớp 2
+                        backgroundColor: 'rgba(230, 230, 200, 0.9)', // Màu sắc nét (Cát)
+                        borderColor: '#8d6e63',
+                        borderWidth: 2,
+                        barPercentage: 0.6,
+                    }
+                ]
+            };
+
+            // Cấu hình các tùy chọn để biểu đồ trông giống trụ địa chất
+            const options = {
+                responsive: true,
+                maintainAspectRatio: false, // Cho phép thay đổi tỷ lệ theo container
+                plugins: {
+                    // Cấu hình chú giải (Legend)
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: { size: 14 },
+                            padding: 20
+                        }
+                    },
+                    // Cấu hình Tooltip (Tương tác khi di chuột) - Y hệt ClearCalcs!
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleFont: { size: 16, weight: 'bold' },
+                        bodyFont: { size: 14 },
+                        padding: 12,
+                        cornerRadius: 4,
+                        callbacks: {
+                            // Tùy chỉnh nội dung hiển thị trong tooltip
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y + 'm (Độ dày)';
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Mô hình Hố khoan',
+                        font: { size: 18, weight: 'bold' },
+                        padding: { bottom: 20 }
+                    }
+                },
+                scales: {
+                    // Cấu hình trục X (Trục ngang) - Ẩn đi để trông giống cột đất
+                    x: {
+                        stacked: true, // Quan trọng: Chồng các lớp lên nhau
+                        grid: { display: false }, // Ẩn lưới
+                        border: { display: false }, // Ẩn đường trục
+                        ticks: { display: false } // Ẩn nhãn
+                    },
+                    // Cấu hình trục Y (Trục đứng - Độ sâu)
+                    y: {
+                        stacked: true, // Quan trọng: Chồng các lớp lên nhau
+                        reverse: true, // QUAN TRỌNG NHẤT: Đảo ngược trục để 0m ở trên đỉnh
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Độ sâu (m)',
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        ticks: {
+                            font: { size: 12 },
+                            stepSize: 1 // Hiển thị vạch chia mỗi 1m
+                        },
+                        grid: {
+                            color: '#e0e0e0' // Màu lưới mờ nhạt chuyên nghiệp
+                        }
+                    }
+                }
+            };
+
+            // Tạo biểu đồ mới
+            mySoilChart = new Chart(ctx, {
+                type: 'bar', // Loại biểu đồ cột
+                data: data,
+                options: options
+            });
+        }
+
+        function tinhToanMong() {
+            // Hàm này sẽ dùng dữ liệu trong currentSoilData và các input B, L, Df để tính toán
+            alert("Hệ thống đã sẵn sàng tính toán với dữ liệu mã đề " + currentSoilData.SFcode);
+        }
+    </script>
 
 </body>
 </html>
