@@ -4,93 +4,270 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tra cứu Mã đề - VietNH Startup</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f4f4f9; }
-        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; }
-        input { padding: 10px; width: 250px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; }
-        button { padding: 10px 20px; background-color: #0070f3; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        button:hover { background-color: #0051bb; }
-        #result { margin-top: 20px; padding: 15px; border-radius: 5px; min-height: 20px; }
-        .success { color: #28a745; background: #e6ffed; border: 1px solid #b7eb8f; }
-        .error { color: #dc3545; background: #fff1f0; border: 1px solid #ffa39e; }
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <script>
         window.MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']] // Khai báo dấu $ dùng cho công thức trên cùng 1 dòng
-            },
-            svg: {
-                fontCache: 'global'
-            }
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' }
         };
     </script>
-    <script type="text/javascript" id="MathJax-script" async
-        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
-    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* Bố cục tổng thể 2 cột */
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            margin: 0; 
+            background-color: #f4f6f8; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        /* ----- CỘT BÊN TRÁI: SIDEBAR (Ga tàu) ----- */
+        .sidebar { 
+            width: 280px; 
+            background: white; 
+            padding: 40px 20px; 
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05); 
+            z-index: 10; 
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar h2 { margin-top: 0; color: #333; font-size: 1.2rem; margin-bottom: 30px; padding-left: 15px;}
+        
+        /* CSS cho Timeline kiểu ga tàu */
+        .timeline { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0;
+            position: relative; 
+        }
+        /* Đường ray (Vạch dọc) */
+        .timeline::before { 
+            content: ''; 
+            position: absolute; 
+            left: 21px; /* Căn giữa vòng tròn */
+            top: 15px; 
+            bottom: 25px; 
+            width: 2px; 
+            background: #e0e0e0; 
+            z-index: 1; 
+        }
+        /* Các trạm (Điểm dừng) */
+        .timeline li { 
+            position: relative; 
+            padding-left: 55px; 
+            margin-bottom: 35px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            color: #666; 
+            font-weight: 500;
+            line-height: 32px; 
+            transition: all 0.3s ease; 
+        }
+        /* Vòng tròn của từng trạm */
+        .timeline li::before { 
+            content: ''; 
+            position: absolute; 
+            left: 12px; 
+            top: 6px; 
+            width: 16px; 
+            height: 16px; 
+            border: 2px solid #dc3545; /* Màu đỏ như bản vẽ của bạn */
+            border-radius: 50%; 
+            background: white; 
+            z-index: 2; 
+            transition: all 0.3s ease; 
+        }
+        /* Trạng thái Hover & Active */
+        .timeline li:hover { color: #dc3545; }
+        .timeline li.active { color: #dc3545; font-weight: bold; }
+        .timeline li.active::before { 
+            background: #dc3545; 
+            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.2); /* Hiệu ứng quầng sáng */
+        }
+
+        /* ----- CỘT BÊN PHẢI: NỘI DUNG ----- */
+        .main-content { 
+            flex-grow: 1; 
+            padding: 40px; 
+            overflow-y: auto; 
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* Khung chứa nội dung từng bước */
+        .step-section { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+            width: 100%;
+            max-width: 700px; 
+            display: none; /* Ẩn đi mặc định */
+            animation: fadeIn 0.4s ease;
+        }
+        .step-section.active { display: block; } /* Chỉ hiện bước đang active */
+
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        /* Form Controls */
+        h3 { margin-top: 0; color: #333; border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; margin-bottom: 25px; }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
+        input[type="text"], input[type="number"] { 
+            padding: 12px; width: 100%; box-sizing: border-box; 
+            border: 1px solid #ccc; border-radius: 6px; font-size: 15px;
+        }
+        input:focus { outline: none; border-color: #0070f3; box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.1); }
+        
+        /* Buttons */
+        .btn-primary { padding: 12px 24px; background-color: #0070f3; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; transition: 0.2s;}
+        .btn-primary:hover { background-color: #0051bb; }
+        .btn-success { background-color: #28a745; }
+        .btn-success:hover { background-color: #218838; }
+        .btn-outline { background-color: white; color: #555; border: 1px solid #ccc; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold;}
+        .btn-outline:hover { background-color: #f0f0f0; }
+        
+        .nav-buttons { display: flex; justify-content: space-between; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+
+        /* Kết quả */
+        .success { color: #28a745; background: #e6ffed; border: 1px solid #b7eb8f; padding: 15px; border-radius: 8px; margin-top: 15px;}
+        .error { color: #dc3545; background: #fff1f0; border: 1px solid #ffa39e; padding: 15px; border-radius: 8px; margin-top: 15px;}
+    </style>
 </head>
 <body>
 
-    <div class="container">
+    <div class="sidebar">
         <h2>Trợ lý Thiết kế Móng Đơn</h2>
+        <ul class="timeline">
+            <li id="nav-step-1" class="active" onclick="chuyenBuoc(1)">Số liệu</li>
+            <li id="nav-step-2" onclick="chuyenBuoc(2)">Phương án móng</li>
+            <li id="nav-step-3" onclick="chuyenBuoc(3)">Lựa chọn kích thước</li>
+            <li id="nav-step-4" onclick="chuyenBuoc(4)">Kiểm tra sức chịu tải</li>
+        </ul>
+    </div>
+
+    <div class="main-content">
         
-        <div class="step-box">
+        <div id="step-1" class="step-section active">
             <h3>1. Tra cứu địa chất</h3>
-            <input type="text" id="maDeInput" placeholder="Nhập mã đề (VD: 2)...">
-            <button onclick="traCuu()">Lấy dữ liệu</button>
-        </div>
-
-        <div id="result"></div> 
-
-        <div id="soil-profile-container" style="display:none; margin-top: 30px; text-align: center;">
-            <h4 style="margin-bottom: 15px;">Hình ảnh trụ địa chất tương tác</h4>
-            <div style="width: 350px; height: 500px; margin: 0 auto;">
-                <canvas id="soilChart"></canvas>
-            </div>
-            <p style="font-size: 0.9em; color: #666; margin-top: 10px;">* Di chuyển chuột vào các lớp đất để xem chi tiết.</p>
-        </div>
-
-        <div id="design-section" style="display:none; margin-top: 20px; padding-top: 20px; border-top: 2px dashed #ccc;">
-            <h3>2. Thông số thiết kế móng</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; margin-bottom: 20px;">
-                <div>
-                    <label>Chiều rộng B (m):</label>
-                    <input type="number" id="inputB" value="1.5" step="0.1" style="width: 90%;">
-                </div>
-                <div>
-                    <label>Chiều dài L (m):</label>
-                    <input type="number" id="inputL" value="2.0" step="0.1" style="width: 90%;">
-                </div>
-                <div>
-                    <label>Độ sâu chôn móng Df (m):</label>
-                    <input type="number" id="inputDf" value="1.5" step="0.1" style="width: 90%;">
-                </div>
-                <div>
-                    <label>Tải trọng đứng N (kN):</label>
-                    <input type="number" id="inputN" value="500" style="width: 90%;">
+            <div class="input-group">
+                <label>Nhập mã đề sinh viên:</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="maDeInput" placeholder="VD: 2">
+                    <button class="btn-primary" style="white-space: nowrap;" onclick="traCuu()">Lấy dữ liệu</button>
                 </div>
             </div>
-            <button onclick="tinhToanMong()" style="background-color: #28a745;">Tính toán sức chịu tải</button>
+
+            <div id="result"></div>
+
+            <div id="soil-profile-container" style="display:none; margin-top: 30px; text-align: center;">
+                <h4 style="margin-bottom: 15px; color: #444;">Mô hình Hố khoan</h4>
+                <div style="width: 300px; height: 400px; margin: 0 auto;">
+                    <canvas id="soilChart"></canvas>
+                </div>
+            </div>
+
+            <div class="nav-buttons" style="justify-content: flex-end;">
+                <button class="btn-primary" onclick="chuyenBuoc(2)" id="btn-next-1" disabled>Tiếp theo &rarr;</button>
+            </div>
         </div>
 
-        <div id="calc-result"></div>
+        <div id="step-2" class="step-section">
+            <h3>2. Lựa chọn Phương án móng</h3>
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 20px;">Dựa vào trụ địa chất ở bước trước, hãy quyết định độ sâu chôn móng.</p>
+            
+            <div class="input-group">
+                <label>Độ sâu chôn móng $D_f$ (m):</label>
+                <input type="number" id="inputDf" value="1.5" step="0.1">
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn-outline" onclick="chuyenBuoc(1)">&larr; Quay lại</button>
+                <button class="btn-primary" onclick="chuyenBuoc(3)">Tiếp theo &rarr;</button>
+            </div>
+        </div>
+
+        <div id="step-3" class="step-section">
+            <h3>3. Lựa chọn kích thước móng</h3>
+            
+            <div class="input-group">
+                <label>Tải trọng đứng tính toán $N$ (kN):</label>
+                <input type="number" id="inputN" value="500">
+            </div>
+            <div style="display: flex; gap: 15px;">
+                <div class="input-group" style="flex: 1;">
+                    <label>Chiều rộng $B$ (m):</label>
+                    <input type="number" id="inputB" value="1.5" step="0.1">
+                </div>
+                <div class="input-group" style="flex: 1;">
+                    <label>Chiều dài $L$ (m):</label>
+                    <input type="number" id="inputL" value="2.0" step="0.1">
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn-outline" onclick="chuyenBuoc(2)">&larr; Quay lại</button>
+                <button class="btn-primary" onclick="chuyenBuoc(4)">Tiếp theo &rarr;</button>
+            </div>
+        </div>
+
+        <div id="step-4" class="step-section">
+            <h3>4. Kiểm tra sức chịu tải của nền</h3>
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 20px;">Hệ thống sẽ tiến hành đối chiếu áp lực dưới đáy móng với sức chịu tải của nền đất.</p>
+            
+            <div style="text-align: center; margin-bottom: 20px;">
+                <button class="btn-primary btn-success" onclick="tinhToanMong()">Tiến hành Tính toán</button>
+            </div>
+
+            <div id="calc-result"></div>
+
+            <div class="nav-buttons">
+                <button class="btn-outline" onclick="chuyenBuoc(3)">&larr; Quay lại</button>
+                <button class="btn-primary" onclick="alert('Tính năng xuất PDF sẽ ra mắt sớm!')">Xuất PDF Báo cáo</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        const SUPABASE_URL = "https://ezksahbyqwnbaabulhhd.supabase.co"; // URL của bạn
-        const SUPABASE_KEY = "sb_publishable_o1TDH7-ji0GCdebRKzgUIA__fzNTGX1"; // API Key của bạn
+        // --- 1. LOGIC ĐIỀU HƯỚNG GA TÀU ---
+        function chuyenBuoc(step) {
+            // Xóa class active của tất cả nội dung và sidebar
+            document.querySelectorAll('.step-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.timeline li').forEach(el => el.classList.remove('active'));
+            
+            // Kích hoạt bước được chọn
+            document.getElementById('step-' + step).classList.add('active');
+            document.getElementById('nav-step-' + step).classList.add('active');
 
-        let currentSoilData = null; // Lưu trữ để dùng cho tính toán móng
+            // Cập nhật lại MathJax nếu có công thức bị ẩn
+            if (window.MathJax) { MathJax.typesetPromise(); }
+        }
+
+        // --- 2. LOGIC TRA CỨU ĐỊA CHẤT ---
+        const SUPABASE_URL = "https://ezksahbyqwnbaabulhhd.supabase.co"; 
+        const SUPABASE_KEY = "sb_publishable_o1TDH7-ji0GCdebRKzgUIA__fzNTGX1"; 
+        let currentSoilData = null; 
+        let mySoilChart = null; 
 
         async function traCuu() {
             const input = document.getElementById('maDeInput').value.trim();
-            // 1. SỬA: Lấy đúng thẻ result để in chữ
-            const resultDiv = document.getElementById('result'); 
-            // 2. SỬA: Lấy riêng thẻ container của biểu đồ
-            const profileContainer = document.getElementById('soil-profile-container'); 
-            const designSection = document.getElementById('design-section');
+            const resultDiv = document.getElementById('result');
+            const profileContainer = document.getElementById('soil-profile-container');
+            const btnNext = document.getElementById('btn-next-1');
             
             if (!input) { alert("Vui lòng nhập mã đề!"); return; }
+            
+            resultDiv.innerHTML = "<p>Đang tải dữ liệu...</p>";
 
             try {
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/ShallowFoundationCode?SFcode=eq.${input}`, {
@@ -104,182 +281,90 @@
                 if (data.length > 0) {
                     currentSoilData = data[0];
                     
-                    // 3. SỬA: Chỉ in khối thông báo văn bản vào resultDiv, KHÔNG in thẻ canvas cũ vào đây nữa
+                    // Hiển thị text
                     resultDiv.innerHTML = `
-                        <div style="background-color: #f0fff4; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #c6f6d5; text-align: left;">
+                        <div class="success">
                             <b style="color: #2f855a;">✅ Đã lấy dữ liệu mã đề: ${currentSoilData.SFcode}</b>
-                            <p style="margin: 5px 0;"><b>Địa tầng:</b> ${currentSoilData.L1name} dày ${currentSoilData.L1thickn}m, phía dưới là ${currentSoilData.L2name}.</p>
+                            <p style="margin: 5px 0 0 0;"><b>Địa tầng:</b> ${currentSoilData.L1name} dày ${currentSoilData.L1thickn}m, phía dưới là ${currentSoilData.L2name}.</p>
                         </div>
                     `;
 
-                    // 4. MỚI: Bật hiển thị cho khung chứa Chart.js
+                    // Vẽ biểu đồ
                     profileContainer.style.display = "block";
-
-                    // Vẽ trụ địa chất bằng Chart.js
                     setTimeout(() => {
-                        veTruDiaChat(
-                            currentSoilData.L1thickn, 
-                            currentSoilData.L2thickn, 
-                            currentSoilData.L1name, 
-                            currentSoilData.L2name
-                        );
+                        veTruDiaChat(currentSoilData.L1thickn, currentSoilData.L2thickn, currentSoilData.L1name, currentSoilData.L2name);
                     }, 100);
-                    
-                    // Hiện phần thiết kế móng
-                    designSection.style.display = "block"; 
-                    designSection.scrollIntoView({ behavior: 'smooth' });
+
+                    // Mở khóa nút Tiếp theo
+                    btnNext.disabled = false;
                 } else {
-                    resultDiv.innerHTML = "<p class='error'>Không tìm thấy mã đề này!</p>";
+                    resultDiv.innerHTML = "<div class="error">Không tìm thấy mã đề này!</div>";
                     profileContainer.style.display = "none";
-                    designSection.style.display = "none";
+                    btnNext.disabled = true;
                 }
             } catch (error) {
                 console.error(error);
-                resultDiv.innerHTML = "<p class='error'>Lỗi kết nối database!</p>";
+                resultDiv.innerHTML = "<div class="error">Lỗi kết nối cơ sở dữ liệu!</div>";
             }
         }
 
-        let mySoilChart = null; // Biến toàn cục để lưu trữ đối tượng biểu đồ
-
+        // --- 3. LOGIC VẼ BIỂU ĐỒ (Giữ nguyên) ---
         function veTruDiaChat(h1, h2, name1, name2) {
             const ctx = document.getElementById('soilChart').getContext('2d');
-
-            // Nếu đã có biểu đồ cũ thì hủy nó đi trước khi vẽ cái mới để tránh lỗi chồng lấn
-            if (mySoilChart) {
-                mySoilChart.destroy();
-            }
-
-            // Chuyển đổi dữ liệu độ dày sang số thực
+            if (mySoilChart) { mySoilChart.destroy(); }
+            
             const depth1 = parseFloat(h1);
             const depth2 = parseFloat(h2);
 
-            // Cấu hình dữ liệu cho biểu đồ
-            const data = {
-                labels: ['Trụ địa chất'], // Nhãn cho cột duy nhất
-                datasets: [
-                    {
-                        label: `Lớp 1: ${name1}`, // Tên hiển thị trong chú giải và tooltip
-                        data: [depth1], // Độ dày lớp 1
-                        backgroundColor: 'rgba(220, 185, 147, 0.9)', // Màu sắc nét, chuyên nghiệp (Sét)
-                        borderColor: '#8d6e63',
-                        borderWidth: 2,
-                        barPercentage: 0.6, // Độ rộng của cột
-                    },
-                    {
-                        label: `Lớp 2: ${name2}`,
-                        data: [depth2], // Độ dày lớp 2
-                        backgroundColor: 'rgba(230, 230, 200, 0.9)', // Màu sắc nét (Cát)
-                        borderColor: '#8d6e63',
-                        borderWidth: 2,
-                        barPercentage: 0.6,
-                    }
-                ]
-            };
-
-            // Cấu hình các tùy chọn để biểu đồ trông giống trụ địa chất
-            const options = {
-                responsive: true,
-                maintainAspectRatio: false, // Cho phép thay đổi tỷ lệ theo container
-                plugins: {
-                    // Cấu hình chú giải (Legend)
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            font: { size: 14 },
-                            padding: 20
-                        }
-                    },
-                    // Cấu hình Tooltip (Tương tác khi di chuột) - Y hệt ClearCalcs!
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleFont: { size: 16, weight: 'bold' },
-                        bodyFont: { size: 14 },
-                        padding: 12,
-                        cornerRadius: 4,
-                        callbacks: {
-                            // Tùy chỉnh nội dung hiển thị trong tooltip
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed.y !== null) {
-                                    label += context.parsed.y + 'm (Độ dày)';
-                                }
-                                return label;
+            mySoilChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Trụ địa chất'],
+                    datasets: [
+                        { label: `Lớp 1: ${name1}`, data: [depth1], backgroundColor: 'rgba(220, 185, 147, 0.9)', borderColor: '#8d6e63', borderWidth: 2, barPercentage: 0.6 },
+                        { label: `Lớp 2: ${name2}`, data: [depth2], backgroundColor: 'rgba(230, 230, 200, 0.9)', borderColor: '#8d6e63', borderWidth: 2, barPercentage: 0.6 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { 
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) { return (context.dataset.label || '') + ': ' + context.parsed.y + 'm (Độ dày)'; }
                             }
                         }
                     },
-                    title: {
-                        display: true,
-                        text: 'Mô hình Hố khoan',
-                        font: { size: 18, weight: 'bold' },
-                        padding: { bottom: 20 }
-                    }
-                },
-                scales: {
-                    // Cấu hình trục X (Trục ngang) - Ẩn đi để trông giống cột đất
-                    x: {
-                        stacked: true, // Quan trọng: Chồng các lớp lên nhau
-                        grid: { display: false }, // Ẩn lưới
-                        border: { display: false }, // Ẩn đường trục
-                        ticks: { display: false } // Ẩn nhãn
-                    },
-                    // Cấu hình trục Y (Trục đứng - Độ sâu)
-                    y: {
-                        stacked: true, // Quan trọng: Chồng các lớp lên nhau
-                        reverse: true, // QUAN TRỌNG NHẤT: Đảo ngược trục để 0m ở trên đỉnh
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Độ sâu (m)',
-                            font: { size: 14, weight: 'bold' }
-                        },
-                        ticks: {
-                            font: { size: 12 },
-                            stepSize: 1 // Hiển thị vạch chia mỗi 1m
-                        },
-                        grid: {
-                            color: '#e0e0e0' // Màu lưới mờ nhạt chuyên nghiệp
-                        }
+                    scales: {
+                        x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { display: false } },
+                        y: { stacked: true, reverse: true, beginAtZero: true, title: { display: true, text: 'Độ sâu (m)' }, ticks: { stepSize: 1 } }
                     }
                 }
-            };
-
-            // Tạo biểu đồ mới
-            mySoilChart = new Chart(ctx, {
-                type: 'bar', // Loại biểu đồ cột
-                data: data,
-                options: options
             });
         }
 
+        // --- 4. LOGIC TÍNH TOÁN (Đã tích hợp MathJax render) ---
         function tinhToanMong() {
-            // Kiểm tra xem đã tra cứu dữ liệu chưa
             if (!currentSoilData) {
-                alert("⚠️ Vui lòng nhập mã đề và tra cứu dữ liệu địa chất trước khi tính toán!");
+                alert("⚠️ Vui lòng quay lại Bước 1 để tra cứu dữ liệu địa chất trước!");
+                chuyenBuoc(1);
                 return;
             }
 
-            // 1. Lấy thông số từ giao diện nhập liệu
             const B = parseFloat(document.getElementById('inputB').value);
             const L = parseFloat(document.getElementById('inputL').value);
             const Df = parseFloat(document.getElementById('inputDf').value);
-            const N = parseFloat(document.getElementById('inputN').value); // Tải trọng đứng
+            const N = parseFloat(document.getElementById('inputN').value);
 
             const thicL1 = parseFloat(currentSoilData.L1thickn);
 
-            // 2. Xác định lớp đất đặt móng dựa vào Df
             let tenLopDatMong = "";
-            // LƯU Ý: Giả định các biến c, phi, gamma lấy từ Database. 
-            // Bạn cần thay thế L1c, L1phi... bằng đúng tên cột trong bảng Supabase của bạn
             let c = 0, phi = 0, gamma = 0; 
 
             if (Df <= thicL1) {
                 tenLopDatMong = currentSoilData.L1name + " (Lớp 1)";
-                c = currentSoilData.L1c || 15;       // Lực dính (kPa) - Đang để số giả định nếu DB chưa có
-                phi = currentSoilData.L1phi || 10;     // Góc ma sát (độ)
-                gamma = currentSoilData.L1gamma || 18; // Trọng lượng riêng (kN/m3)
+                c = currentSoilData.L1c || 15;       
+                phi = currentSoilData.L1phi || 10;     
+                gamma = currentSoilData.L1gamma || 18; 
             } else {
                 tenLopDatMong = currentSoilData.L2name + " (Lớp 2)";
                 c = currentSoilData.L2c || 20;       
@@ -287,73 +372,52 @@
                 gamma = currentSoilData.L2gamma || 19; 
             }
 
-            // 3. Tính toán sức chịu tải (Mô phỏng công thức Terzaghi / TCVN)
-            // Chuyển góc ma sát sang radian để tính sin, cos
             const phiRad = phi * Math.PI / 180;
-            
-            // Tính các hệ số sức chịu tải (Công thức gần đúng)
             const Nq = Math.exp(Math.PI * Math.tan(phiRad)) * Math.pow(Math.tan(Math.PI/4 + phiRad/2), 2);
             const Nc = (Nq - 1) / Math.tan(phiRad);
             const Ngamma = 2 * (Nq + 1) * Math.tan(phiRad);
 
-            // Công thức tính sức chịu tải cực hạn (q_ult) cho móng chữ nhật
             const q_ult = c * Nc * (1 + 0.3 * (B/L)) + gamma * Df * Nq + 0.5 * gamma * B * Ngamma * (1 - 0.2 * (B/L));
-            
-            // Sức chịu tải cho phép (R) - Hệ số an toàn Fs = 3
-            const Fs = 3;
-            const R_allowable = q_ult / Fs;
+            const R_allowable = q_ult / 3;
+            const P_actual = N / (B * L) + gamma * Df;
 
-            // Áp lực thực tế dưới đáy móng (P)
-            const DienTich = B * L;
-            const P_actual = N / DienTich + gamma * Df;
-
-            // Đánh giá an toàn
             const isSafe = P_actual <= R_allowable;
             const statusColor = isSafe ? "#28a745" : "#dc3545";
-            const statusText = isSafe ? "ĐẠT (An toàn)" : "KHÔNG ĐẠT (Cần tăng kích thước B, L)";
+            const statusText = isSafe ? "ĐẠT (Nền đất đảm bảo)" : "KHÔNG ĐẠT (Cần tăng kích thước B, L)";
 
-            // 4. Hiển thị kết quả ra giao diện
             const resultDiv = document.getElementById('calc-result');
             resultDiv.innerHTML = `
-                <div style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 25px; text-align: left;">
-                    <h3 style="margin-top:0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">📊 Báo cáo Thiết kế Móng</h3>
-                    
-                    <p><b>1. Lớp đất đặt móng:</b> ${tenLopDatMong}</p>
-                    <p style="color: #555; font-size: 0.9em;"><i>Thông số tự động lấy từ DB: $c$ = ${c} kPa, $\\phi$ = ${phi}°, $\\gamma$ = ${gamma} kN/m³</i></p>
+                <div style="background: #fff; padding: 25px; border-radius: 8px; border: 1px solid #ddd; margin-top: 20px;">
+                    <h4 style="margin-top:0; border-bottom: 1px solid #eee; padding-bottom: 10px;">📊 Báo cáo kết quả</h4>
+                    <p><b>Lớp đất tựa móng:</b> ${tenLopDatMong}</p>
+                    <p style="color: #666; font-size: 0.9em;">Thông số: $c = ${c}$ kPa, $\\phi = ${phi}^\\circ$, $\\gamma = ${gamma}$ kN/m³</p>
                     
                     <table style="width: 100%; margin-top: 15px; border-collapse: collapse;">
                         <tr style="background: #f8f9fa;">
-                            <td style="padding: 10px; border: 1px solid #ddd;">Áp lực cực hạn nền đất ($q_{ult}$)</td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">${q_ult.toFixed(1)} kPa</td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">Áp lực cực hạn ($q_{ult}$)</td>
+                            <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; text-align: right;">${q_ult.toFixed(1)} kPa</td>
                         </tr>
                         <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd;">Sức chịu tải cho phép ($R$)</td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; color: #007bff;">${R_allowable.toFixed(1)} kPa</td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">Sức chịu tải cho phép ($R$)</td>
+                            <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; color: #0070f3; text-align: right;">${R_allowable.toFixed(1)} kPa</td>
                         </tr>
                         <tr style="background: #f8f9fa;">
-                            <td style="padding: 10px; border: 1px solid #ddd;">Áp lực thực tế dưới đáy móng ($P$)</td>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">${P_actual.toFixed(1)} kPa</td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">Áp lực thực tế ($P$)</td>
+                            <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; text-align: right;">${P_actual.toFixed(1)} kPa</td>
                         </tr>
                     </table>
 
-                    <div style="margin-top: 20px; padding: 15px; border-radius: 5px; background: ${isSafe ? '#e6ffed' : '#fff1f0'}; border: 1px solid ${statusColor}; text-align: center;">
-                        <h4 style="margin: 0; color: ${statusColor};">Kết luận: ${statusText}</h4>
+                    <div style="margin-top: 20px; padding: 15px; border-radius: 5px; background: ${isSafe ? '#e6ffed' : '#fff1f0'}; border: 1px solid ${statusColor}; text-align: center; font-weight: bold; color: ${statusColor};">
+                        Kết luận: ${statusText}
                     </div>
                 </div>
             `;
             
-            // Cuộn xuống xem kết quả
-            resultDiv.scrollIntoView({ behavior: 'smooth' });
-
-            // --- THÊM ĐOẠN NÀY ---
-            // Yêu cầu MathJax render lại các công thức toán học trong bảng kết quả
+            // Yêu cầu MathJax render lại công thức
             if (window.MathJax) {
-                MathJax.typesetPromise([resultDiv]).catch(function (err) {
-                    console.error('Lỗi MathJax: ', err.message);
-                });
+                MathJax.typesetPromise([resultDiv]).catch(err => console.error(err));
             }
         }
     </script>
-
 </body>
 </html>
