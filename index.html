@@ -27,6 +27,8 @@
             <button onclick="traCuu()">Lấy dữ liệu</button>
         </div>
 
+        <div id="result"></div> 
+
         <div id="soil-profile-container" style="display:none; margin-top: 30px; text-align: center;">
             <h4 style="margin-bottom: 15px;">Hình ảnh trụ địa chất tương tác</h4>
             <div style="width: 350px; height: 500px; margin: 0 auto;">
@@ -69,7 +71,10 @@
 
         async function traCuu() {
             const input = document.getElementById('maDeInput').value.trim();
-            const resultDiv = document.getElementById('result');
+            // 1. SỬA: Lấy đúng thẻ result để in chữ
+            const resultDiv = document.getElementById('result'); 
+            // 2. SỬA: Lấy riêng thẻ container của biểu đồ
+            const profileContainer = document.getElementById('soil-profile-container'); 
             const designSection = document.getElementById('design-section');
             
             if (!input) { alert("Vui lòng nhập mã đề!"); return; }
@@ -86,20 +91,18 @@
                 if (data.length > 0) {
                     currentSoilData = data[0];
                     
-                    // 1. Hiển thị thông tin văn bản
+                    // 3. SỬA: Chỉ in khối thông báo văn bản vào resultDiv, KHÔNG in thẻ canvas cũ vào đây nữa
                     resultDiv.innerHTML = `
                         <div style="background-color: #f0fff4; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #c6f6d5; text-align: left;">
                             <b style="color: #2f855a;">✅ Đã lấy dữ liệu mã đề: ${currentSoilData.SFcode}</b>
                             <p style="margin: 5px 0;"><b>Địa tầng:</b> ${currentSoilData.L1name} dày ${currentSoilData.L1thickn}m, phía dưới là ${currentSoilData.L2name}.</p>
                         </div>
-                        <div id="soil-profile-area" style="margin-top: 20px;">
-                            <h4>Hình ảnh trụ địa chất</h4>
-                            <canvas id="soilCanvas" width="300" height="400" style="border: 1px solid #ccc; background: #fff; border-radius: 4px;"></canvas>
-                            <div id="soil-legend" style="margin-top: 10px; font-size: 1.2em; font-weight: bold;"></div>
-                        </div>
                     `;
 
-                    // 2. Vẽ trụ địa chất (Sử dụng setTimeout để đảm bảo Canvas đã tồn tại trong DOM)
+                    // 4. MỚI: Bật hiển thị cho khung chứa Chart.js
+                    profileContainer.style.display = "block";
+
+                    // Vẽ trụ địa chất bằng Chart.js
                     setTimeout(() => {
                         veTruDiaChat(
                             currentSoilData.L1thickn, 
@@ -109,11 +112,13 @@
                         );
                     }, 100);
                     
-                    // 3. Hiện phần thiết kế móng
+                    // Hiện phần thiết kế móng
                     designSection.style.display = "block"; 
                     designSection.scrollIntoView({ behavior: 'smooth' });
                 } else {
                     resultDiv.innerHTML = "<p class='error'>Không tìm thấy mã đề này!</p>";
+                    profileContainer.style.display = "none";
+                    designSection.style.display = "none";
                 }
             } catch (error) {
                 console.error(error);
